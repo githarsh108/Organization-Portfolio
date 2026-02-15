@@ -16,51 +16,56 @@ const App: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    // Initialize Lenis
+    // Initialize Lenis for buttery smooth scrolling
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1,
+      wheelMultiplier: 1.1,
       touchMultiplier: 2,
     });
 
     // Synchronize Lenis with ScrollTrigger
     lenis.on('scroll', ScrollTrigger.update);
 
-    // Standard requestAnimationFrame loop for Lenis
     function raf(time: number) {
       lenis.raf(time);
       requestAnimationFrame(raf);
     }
     const rafId = requestAnimationFrame(raf);
 
-    // Initial reveal animation context
     const ctx = gsap.context(() => {
+      // Set global scrollTrigger defaults
+      ScrollTrigger.defaults({
+        markers: false,
+        toggleActions: "play none none none"
+      });
+
+      // Section reveal animation for all sections
       const sections = gsap.utils.toArray('section');
       sections.forEach((section: any) => {
+        // Skip hero as it has its own intro
+        if (section.id === 'hero') return;
+
         gsap.from(section, {
           opacity: 0,
-          y: 40,
-          duration: 1,
-          ease: "power2.out",
+          y: 60,
+          duration: 1.4,
+          ease: "power3.out",
           scrollTrigger: {
             trigger: section,
-            start: "top 85%",
-            toggleActions: "play none none none",
-            // For sections that might have different markers
-            markers: false,
+            start: "top 90%",
+            once: true
           }
         });
       });
       
-      // Refresh to calculate positions
       ScrollTrigger.refresh();
     }, containerRef);
 
-    // Anchor smooth scrolling
+    // Anchor smooth scrolling integration with Lenis
     const handleAnchorClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const anchor = target.closest('a');
@@ -71,25 +76,19 @@ const App: React.FC = () => {
     };
     document.addEventListener('click', handleAnchorClick);
 
-    // Refresh after layout stabilization
-    const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 1000);
-
     return () => {
       ctx.revert();
       cancelAnimationFrame(rafId);
       lenis.destroy();
       document.removeEventListener('click', handleAnchorClick);
-      clearTimeout(timer);
     };
   }, []);
 
   return (
-    <div ref={containerRef} className="relative bg-[#0a0a0a] min-h-screen w-full">
+    <div ref={containerRef} className="relative bg-black min-h-screen w-full selection:bg-white selection:text-black">
       <CustomCursor />
       <Navbar />
-      <main>
+      <main className="relative z-10">
         <Hero />
         <About />
         <Projects />
